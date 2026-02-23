@@ -33,9 +33,10 @@ install_cmdstan(cores = 2)
 # ================================================================================
 # CRAN packages
 cran_packages = c(
-  "tidyverse",
+  "bayesplot",
+  "janitor",
   "readxl",
-  "janitor"
+  "tidyverse"
 )
 
 installed = rownames(installed.packages())
