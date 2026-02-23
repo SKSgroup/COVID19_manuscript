@@ -1,4 +1,3 @@
-library(tidyverse)
 library(cmdstanr)
 
 # Load Stan data list
