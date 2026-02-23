@@ -8,7 +8,7 @@ sd = readRDS("data/processed/standata.rds")
 mod = cmdstan_model("code/Stan/m3_binom_pair_samplere.stan")
 
 # Fit Stan model, save fit object and CSV files with draws to disk
-# Note: this takes about 8 hours on a MacBook Pro M3 Max using 4 cores
+# Note: this takes about 2 hours on a MacBook Pro M3 Max using 4 cores
 stanfit = mod$sample(
   data = sd,
   chains = 4,
