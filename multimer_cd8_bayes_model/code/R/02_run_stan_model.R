@@ -14,8 +14,8 @@ stanfit = mod$sample(
   parallel_chains = 4,
   iter_warmup = 2000,
   iter_sampling = 2000,
-  adapt_delta = 0.8,
-  max_treedepth = 10,
+  adapt_delta = 0.95,
+  max_treedepth = 15,
   output_dir = "results/"
 )
 saveRDS(stanfit, "results/stanfit.rds")
