@@ -117,26 +117,3 @@ model {
     target += binomial_logit_lpmf(y[n_i] | n[n_i], eta);
   }
 }
-
-generated quantities {
-  array[N] real log_lik;
-  for (n_i in 1:N) {
-    int s = sample_of_obs[n_i];
-    int p = pep_of_obs[n_i];
-    int a = allele_of_obs[n_i];
-    int j = pair_of_obs[n_i];
-    int sev = severity[s];
-
-    real eta =
-      b0
-      + b_sexM * sex_M[s]
-      + dot_product(B_age[s], b_age)
-      + samp_re[s]
-      + b_sev * sev
-      + re_pep0[p] + re_pepSev[p] * sev
-      + re_hla0[a] + re_hlaSev[a] * sev
-      + re_pair0[j];
-
-    log_lik[n_i] = binomial_logit_lpmf(y[n_i] | n[n_i], eta);
-  }
-}
