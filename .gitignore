@@ -13,7 +13,7 @@ multimer_cd8_bayes_model/results/*.csv
 multimer_cd8_bayes_model/results/*.rds
 
 # Generated figures
-# multimer_cd8_bayes_model/figures/*
+multimer_cd8_bayes_model/figures/*
 
 # CmdStan compiled executable
 multimer_cd8_bayes_model/code/Stan/m3_binom_pair_samplere
