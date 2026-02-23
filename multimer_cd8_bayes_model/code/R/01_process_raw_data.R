@@ -4,7 +4,8 @@
 # Encode age as cubic spline with 3 df
 # Encode sex as binary (0=F, 1=M)
 # Encode severity as binary (0=mild, 1=severe)
-# Add indices for sample, peptide, hla, hla-peptide pair (to index arrays of parameters)
+# Add indices for sample, peptide, hla, hla-peptide pair 
+# (to index arrays of parameters)
 # Create Stan data list and save to disk
 # =========================================================================
 
