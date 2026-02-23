@@ -15,21 +15,6 @@ library(janitor)
 library(splines)
 
 # =========================================================================
-# Set OVERWRITE_OUTPUTS to TRUE if you want your own newly created objects
-# to overwrite the originally committed ones
-# =========================================================================
-OVERWRITE_OUTPUTS = TRUE
-
-save_rds_maybe = function(object, path, overwrite = TRUE) {
-  if (!overwrite && file.exists(path)) {
-    message("Skipping existing file: ", path)
-    return(invisible(FALSE))
-  }
-  saveRDS(object, path)
-  invisible(TRUE)
-}
-
-# =========================================================================
 # Create data frame with selected patient covariates: severity, sex, age
 # Encode:
 #   sex as binary: sex_M (0=F, 1=M)
@@ -63,7 +48,7 @@ df_cov = bind_cols(df_cov, as_tibble(B_age)) %>%
   relocate(patient, severity, severity_bin, sex, sex_M, age)
 
 df_cov
-save_rds_maybe(df_cov, "data/processed/df_cov.rds", OVERWRITE_OUTPUTS)
+saveRDS(df_cov, "data/processed/df_cov.rds")
 
 # =============================================================================================
 # Create data frame with observed T-cell counts, one row per patient x peptide x HLA observation
@@ -114,7 +99,7 @@ df_counts = read_excel("data/raw/COVID_counts.xlsx") %>%
   relocate(patient, hla, peptide, pair, cd8_count, multimer_count, p_mhc_count)
 
 df_counts
-save_rds_maybe(df_counts, "data/processed/df_counts.rds", OVERWRITE_OUTPUTS)
+saveRDS(df_counts, "data/processed/df_counts.rds")
 
 # =============================================================================================
 # Merge df_cov + df_counts to create df with all model-relevant data, one row per observation
@@ -132,7 +117,7 @@ df_model = df_counts %>%
   ) 
 
 df_model
-save_rds_maybe(df_model, "data/processed/df_model.rds", OVERWRITE_OUTPUTS)
+saveRDS(df_model, "data/processed/df_model.rds")
 
 # =============================================================================================
 # Create sample-level table (one row per sample/patient)
@@ -142,7 +127,7 @@ df_samp = df_model %>%
   arrange(sample_id)
 
 df_samp
-save_rds_maybe(df_samp, "data/processed/df_samp.rds", OVERWRITE_OUTPUTS)
+saveRDS(df_samp, "data/processed/df_samp.rds")
 
 # ============================================================
 # Optional sanity checks 
@@ -193,7 +178,7 @@ standata = list(
 )
 
 standata
-save_rds_maybe(standata, "data/processed/standata.rds", OVERWRITE_OUTPUTS)
+saveRDS(standata, "data/processed/standata.rds")
 
 # ============================================================
 # Index maps for interpreting Stan indices in post processing
@@ -217,4 +202,4 @@ index_map = list(
 )
 
 index_map
-save_rds_maybe(index_map, "data/processed/index_map.rds", OVERWRITE_OUTPUTS)
+saveRDS(index_map, "data/processed/index_map.rds")
