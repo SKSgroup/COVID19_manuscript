@@ -6,7 +6,6 @@ This repository contains separate sub-directories for different analyses
 Code and data for Bayesian modeling of epitope-specific CD8 T-cell responses measured by pHLA multimer assays. This subdirectory includes:
 
 - raw input data files (Excel)
-- processed intermediate data objects (`.rds`)
 - R scripts for data processing and figure generation
 - Stan model code for fitting the mixed-effects logistic regression model
 - output directories for model results and figures
