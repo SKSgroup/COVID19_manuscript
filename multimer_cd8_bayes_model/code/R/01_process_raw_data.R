@@ -1,6 +1,6 @@
 # ================================================================================
 # 01_process_raw_data.R
-# Read raw Excel input files and create processed data objects for Stan fitting.
+# Read Excel input files and create processed data objects for Stan fitting.
 #
 # Inputs:
 #   - data/raw/Supplementary Tables_eBioMedicine.xlsx
