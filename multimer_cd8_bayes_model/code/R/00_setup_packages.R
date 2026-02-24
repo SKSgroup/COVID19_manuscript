@@ -3,7 +3,7 @@
 # Install required R packages and CmdStanR/CmdStan for this analysis.
 #
 # Notes:
-#   - Run interactively (recommended)
+#   - Run interactively
 #   - Restart R and rerun if installation fails due to session/namespace issues
 #   - CmdStanR setup guide: https://mc-stan.org/cmdstanr/articles/cmdstanr.html
 # ================================================================================
@@ -15,6 +15,8 @@ install.packages("cmdstanr", repos = c("https://stan-dev.r-universe.dev", getOpt
 
 # ================================================================================
 # 2) Check CmdStan toolchain setup
+# If issue with toolchain: check instructions here:
+# https://mc-stan.org/cmdstanr/articles/cmdstanr.html
 # ============================================================================================
 library(cmdstanr)
 check_cmdstan_toolchain()
@@ -23,9 +25,6 @@ check_cmdstan_toolchain()
 # 3) Install CmdStan
 # ================================================================================
 install_cmdstan(cores = 2)
-
-# If issue with toolchain: check instructions here:
-# https://mc-stan.org/cmdstanr/articles/cmdstanr.html
 
 # ================================================================================
 # 4) Install other required CRAN packages
