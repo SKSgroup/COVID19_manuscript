@@ -1,18 +1,11 @@
 # ================================================================================
 # 00_setup_packages.R
-# Install required R packages and CmdStanR/CmdStan for the analysis workflow
-#
-# Purpose:
-#   - Install required CRAN packages (if missing)
-#   - Install CmdStanR (if missing)
-#   - Check CmdStan toolchain setup
-#   - Install CmdStan (if needed)
+# Install required R packages and CmdStanR/CmdStan for this analysis.
 #
 # Notes:
-#   - Recommended to run interactively
-#   - If installation fails due to namespace/session issues, restart R and rerun
-#   - See CmdStanR installation guide if toolchain setup fails:
-#     https://mc-stan.org/cmdstanr/articles/cmdstanr.html
+#   - Run interactively (recommended)
+#   - Restart R and rerun if installation fails due to session/namespace issues
+#   - CmdStanR setup guide: https://mc-stan.org/cmdstanr/articles/cmdstanr.html
 # ================================================================================
 
 # ================================================================================

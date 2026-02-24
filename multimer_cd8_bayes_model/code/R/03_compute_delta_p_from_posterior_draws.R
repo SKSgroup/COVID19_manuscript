@@ -1,28 +1,14 @@
 # ================================================================================
 # 03_compute_delta_p_from_posterior_draws.R
-# Compute posterior average predictive comparisons (APCs) from Stan posterior draws
+# Compute posterior APCs (delta-p = p_severe - p_mild) from Stan posterior draws.
 #
-# Definition:
-#   - delta-p = p_severe - p_mild
-#   - APCs are obtained by averaging delta-p across observations within each group
-#     (peptide, HLA allele, or peptide-HLA pair)
-#
-# Input files:
+# Inputs:
 #   - data/processed/standata.rds
 #   - data/processed/index_map.rds
 #   - results/stanfit.rds
 #
-# Main tasks:
-#   - Extract posterior draws from fitted Stan model
-#   - Reconstruct linear predictors for severity = 0 and severity = 1
-#   - Compute observation-level delta-p for each posterior draw
-#   - Aggregate to posterior APCs for peptide, HLA, and peptide-HLA pair levels
-#   - Convert outputs to tidy long-format tables
-#
-# Output files (written to results/):
-#   - pep_post.rds
-#   - hla_post.rds
-#   - pair_post.rds
+# Outputs (results/):
+#   - pep_post.rds, hla_post.rds, pair_post.rds
 # ================================================================================
 
 library(tidyverse)
