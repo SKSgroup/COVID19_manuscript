@@ -15,24 +15,28 @@
 #     https://mc-stan.org/cmdstanr/articles/cmdstanr.html
 # ================================================================================
 
-# Install cmdstanR interface if needed
+# ================================================================================
+# 1) Install CmdStanR (R interface to CmdStan)
+# ================================================================================
 install.packages("cmdstanr", repos = c("https://stan-dev.r-universe.dev", getOption("repos")))
 
-# Check that the required C++ toolchain for CmdStan is available:
+# ================================================================================
+# 2) Check CmdStan toolchain setup
+# ============================================================================================
 library(cmdstanr)
 check_cmdstan_toolchain()
 
-# If C++ toolchain OK ("The C++ toolchain required for CmdStan is setup properly!"):
-# Install cmdstan using function from cmdstanR:
+# ================================================================================
+# 3) Install CmdStan
+# ================================================================================
 install_cmdstan(cores = 2)
 
-# If issue with toolchain: check instructions here: 
+# If issue with toolchain: check instructions here:
 # https://mc-stan.org/cmdstanr/articles/cmdstanr.html
 
 # ================================================================================
-# Other needed R-packages
+# 4) Install other required CRAN packages
 # ================================================================================
-# CRAN packages
 cran_packages = c(
   "bayesplot",
   "janitor",
@@ -48,4 +52,3 @@ if (length(cran_missing) > 0) {
 } else {
   message("All CRAN packages already installed.")
 }
-

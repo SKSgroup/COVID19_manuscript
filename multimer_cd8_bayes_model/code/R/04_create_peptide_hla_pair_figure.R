@@ -20,23 +20,21 @@
 library(tidyverse)
 library(bayesplot)
 
-# =============================================================================
-# Input posterior draws (APC delta-p posteriors)
-#   pep_post : draw-wise peptide APCs (columns: draw, peptide, dp)
-#   pair_post: draw-wise pair APCs    (columns: draw, pair, peptide, hla, dp)
-# =============================================================================
-
+# ================================================================================
+# 0) Load posterior APC draws (delta-p)
+#    - pep_post : draw-wise peptide APCs (draw, peptide, dp)
+#    - pair_post: draw-wise peptide-HLA pair APCs (draw, pair, peptide, hla, dp)
+# ================================================================================
 pep_post  = readRDS("results/pep_post.rds")
 pair_post = readRDS("results/pair_post.rds")
 
 # Region of practical equivalence (ROPE) around zero for delta-p
 rope = 1e-4
 
-# =============================================================================
-# Helper function: summarize posterior draws for delta-p within groups
-# Returns mean and quantiles, and posterior probabilities relative to 0 / ROPE
-# =============================================================================
-
+# ================================================================================
+# Helper: summarize posterior draws for delta-p within groups
+# Returns means, quantiles, and posterior probabilities relative to 0 / ROPE
+# ================================================================================
 summarise_dp = function(data, group_var, rope = 1e-4) {
   data %>%
     group_by({{ group_var }}) %>%
@@ -53,10 +51,9 @@ summarise_dp = function(data, group_var, rope = 1e-4) {
     )
 }
 
-# =============================================================================
-# 1) Peptide-level posterior summary (used for screening / selection)
-# =============================================================================
-
+# ================================================================================
+# 1) Summarize peptide-level posterior APCs and select peptides for pair plot
+# ================================================================================
 pep_summary = summarise_dp(pep_post, peptide, rope = rope)
 
 # Top 13 peptides with strongest positive delta-p (and high posterior support)
@@ -79,10 +76,9 @@ print(pep_sel_neg)
 # Combined set of 20 peptides used to define the pair plot
 pep_sel = bind_rows(pep_sel_pos, pep_sel_neg)
 
-# =============================================================================
-# 2) Pair-level posterior summary for pairs involving the selected 20 peptides
-# =============================================================================
-
+# ================================================================================
+# 2) Summarize peptide-HLA pair posterior APCs for selected peptides
+# ================================================================================
 pair_summary = pair_post %>%
   semi_join(pep_sel %>% select(peptide), by = "peptide") %>%
   summarise_dp(pair, rope = rope) %>%
@@ -96,11 +92,10 @@ pair_order = pair_summary$pair
 # Sanity check: should be 25 pairs (20 peptides, 5 of them with two HLAs)
 message("Selected peptide-HLA pairs: ", length(pair_order))
 
-# =============================================================================
-# 3) Build wide draw matrix for bayesplot::mcmc_intervals()
+# ================================================================================
+# 3) Build draw matrix for bayesplot::mcmc_intervals()
 #    bayesplot expects one column per parameter/pair and one row per draw
-# =============================================================================
-
+# ================================================================================
 df_plot = pair_post %>%
   filter(pair %in% pair_order) %>%
   select(draw, pair, dp) %>%
@@ -108,13 +103,12 @@ df_plot = pair_post %>%
   pivot_wider(names_from = pair, values_from = dp) %>%
   select(draw, all_of(pair_order))
 
-# =============================================================================
-# 4) Plot posterior intervals for the 25 peptide-HLA pairs
-# =============================================================================
-
+# ================================================================================
+# 4) Create posterior interval plot for selected peptide-HLA pairs
+# ================================================================================
 # Linear-scale version (useful for checking absolute magnitudes)
 p_pair = mcmc_intervals(df_plot %>% select(-draw), prob_outer = 0.9) +
-  labs(x = "Δp (severe − mild): change in pMHC+ fraction of CD8") +
+  labs(x = expression(Delta * "p (severe - mild): change in pMHC+ fraction of CD8")) +
   theme_bw() +
   geom_vline(xintercept = 0, lty = 2)
 
@@ -129,11 +123,9 @@ p_pair_pseudolog = p_pair +
 
 p_pair_pseudolog
 
-# =============================================================================
-# 5) Save figure as PDF
-# =============================================================================
-
-cairo_pdf("figures/peptide_hla_25pairs_13pos_7neg_pseudolog.pdf", width = 7, height = 6)
+# ================================================================================
+# 5) Save figure (PDF)
+# ================================================================================
+pdf("figures/peptide_hla_25pairs_13pos_7neg_pseudolog.pdf", width = 7, height = 6, useDingbats = FALSE)
 print(p_pair_pseudolog)
 dev.off()
-

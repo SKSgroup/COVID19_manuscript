@@ -1,6 +1,6 @@
 # ================================================================================
 # 01_process_raw_data.R
-# Read raw Excel input files and create processed data objects for Stan fitting
+# Read Excel input files and create processed data objects for Stan fitting
 #
 # Input files:
 #   - data/raw/Supplementary Tables_eBioMedicine.xlsx
@@ -33,15 +33,14 @@ library(readxl)
 library(janitor)
 library(splines)
 
-# =========================================================================
-# Create data frame with selected patient covariates: severity, sex, age
-# Encode:
-#   sex as binary: sex_M (0=F, 1=M)
-#   severity as binary severity_bin: 0=mild, 1=severe
-#   age as cubic spline with 3 df
-# =========================================================================
+# ================================================================================
+# 1) Create patient covariate table (severity, sex, age)
+#    - Encode severity as binary (severity_bin: 0 = mild, 1 = severe)
+#    - Encode sex as binary (sex_M: 0 = F, 1 = M)
+#    - Encode age as cubic spline basis (3 df)
+# ================================================================================
 df_cov = read_excel("data/raw/Supplementary Tables_eBioMedicine.xlsx",
-                        sheet=1, range = "B3:L76") %>% 
+                    sheet = 1, range = "B3:L76") %>% 
   clean_names() %>%  
   select(patient_id, severity, age, sex) %>% 
   rename(patient = patient_id) %>% 
@@ -51,40 +50,43 @@ df_cov = read_excel("data/raw/Supplementary Tables_eBioMedicine.xlsx",
       str_detect(severity, regex("^\\s*severe\\b", ignore_case = TRUE)) ~ "severe",
       str_detect(severity, regex("^\\s*mild\\b",   ignore_case = TRUE)) ~ "mild"
     ),
-    severity_bin = as.integer(severity=="severe"),
+    severity_bin = as.integer(severity == "severe"),
     age = age %>%
-      str_trim() %>%            
+      str_trim() %>%
       parse_integer(),            # -> integer (NA where not parseable)
     sex = str_trim(sex),
     sex_M = as.integer(sex == "M"),
-    patient = as.integer(str_remove(patient, "^AP-")),  # "AP-01" -> 1
+    patient = as.integer(str_remove(patient, "^AP-"))  # "AP-01" -> 1
   ) %>%
   relocate(patient, severity, sex, sex_M, age)
+
 B_age = ns(df_cov$age, df = 3)
 B_age = scale(B_age, center = TRUE, scale = FALSE)
 colnames(B_age) = c("age_s1", "age_s2", "age_s3")
+
 df_cov = bind_cols(df_cov, as_tibble(B_age)) %>% 
   relocate(patient, severity, severity_bin, sex, sex_M, age)
 
 df_cov
 saveRDS(df_cov, "data/processed/df_cov.rds")
 
-# =============================================================================================
-# Create data frame with observed T-cell counts, one row per patient x peptide x HLA observation
-#    cd8_count: total number CD8+ T-cells in sample (same for all observations from patient)
-#    p_mhc_count: number of T-cells responding to this specific peptide-HLA pair
-#    multimer_count: number of T-cells recognising any peptide-HLA pair in this patient sample
-# =============================================================================================
+# ================================================================================
+# 2) Create observed T-cell count table (patient x peptide x HLA)
+#    - cd8_count     : total CD8+ T-cell count in sample
+#    - p_mhc_count   : count for specific peptide-HLA pair
+#    - multimer_count: total count across all peptide-HLA pairs in sample
+# ================================================================================
 
-# For groups of peptides recognised by same T-cell: 
-# create mapping so we can replace group members by representative peptide
-# (first member of group)
+# ================================================================================
+# 2a) Define peptide-group map (group members -> representative peptide)
+# ================================================================================
 pep_groups = list(
   c("TTDPSFLGRY", "HTTDPSFLGRY", "TTDPSFLGRYM"),
   c("FTSDYYQLY",  "YFTSDYYQLY"),
   c("CTDDNALAYY", "CTDDNALAYYN", "TDDNALAYY"),
   c("VATSRTLSYY", "ATSRTLSYY")
 )
+
 pep_map = c()
 for (g in pep_groups) {
   pep_map[g] = g[1]
@@ -95,8 +97,9 @@ df_counts = read_excel("data/raw/COVID_counts.xlsx") %>%
   filter(timepoint == "01") %>% 
   select(patient, hla, peptide, cd8_count, est_freq_adjusted) %>% 
   mutate(patient = as.integer(patient)) %>% 
-  mutate(cd8_count = as.integer(cd8_count),
-         p_mhc_count = as.integer(round(cd8_count*est_freq_adjusted/100))
+  mutate(
+    cd8_count = as.integer(cd8_count),
+    p_mhc_count = as.integer(round(cd8_count * est_freq_adjusted / 100))
   ) %>%
   select(-est_freq_adjusted) %>% 
   mutate(
@@ -108,9 +111,10 @@ df_counts = read_excel("data/raw/COVID_counts.xlsx") %>%
     cd8_count = first(cd8_count),                 # constant within patient+timepoint
     p_mhc_count = sum(p_mhc_count, na.rm = TRUE), # sum counts across merged peptides
     .groups = "drop"
-  ) %>% group_by(patient) %>%
+  ) %>%
+  group_by(patient) %>%
   mutate(multimer_count = sum(p_mhc_count, na.rm = TRUE)) %>%
-  ungroup()  %>%
+  ungroup() %>%
   mutate(
     hla = str_replace(as.character(hla), "^HLA-", ""),
     pair = paste(peptide, hla, sep = " | ")
@@ -120,27 +124,26 @@ df_counts = read_excel("data/raw/COVID_counts.xlsx") %>%
 df_counts
 saveRDS(df_counts, "data/processed/df_counts.rds")
 
-# =============================================================================================
-# Merge df_cov + df_counts to create df with all model-relevant data, one row per observation
-# Also add IDs (consecutive indices) for sample, pep, hla, pair.
-# IDs are assigned by factor level order (alphabetical); mappings are saved in index_map
-# Used to create data structures for Stan, while ensuring alignment of indices etc.
-# =============================================================================================
+# ================================================================================
+# 3) Merge covariates and counts; create observation-level model table
+#    - Add integer IDs for sample, peptide, HLA, and peptide-HLA pair
+#    - IDs follow factor level order (alphabetical); mappings saved in index_map
+# ================================================================================
 df_model = df_counts %>% 
-  left_join(df_cov, by="patient") %>% 
+  left_join(df_cov, by = "patient") %>% 
   mutate(
     sample_id = as.integer(factor(patient)),
     pep_id    = as.integer(factor(peptide)),
-    hla_id = as.integer(factor(hla)),
+    hla_id    = as.integer(factor(hla)),
     pair_id   = as.integer(factor(pair))
-  ) 
+  )
 
 df_model
 saveRDS(df_model, "data/processed/df_model.rds")
 
-# =============================================================================================
-# Create sample-level table (one row per sample/patient)
-# =============================================================================================
+# ================================================================================
+# 4) Create sample-level table (one row per patient/sample)
+# ================================================================================
 df_samp = df_model %>%
   distinct(sample_id, patient, severity_bin, sex_M, age_s1, age_s2, age_s3) %>%
   arrange(sample_id)
@@ -148,9 +151,9 @@ df_samp = df_model %>%
 df_samp
 saveRDS(df_samp, "data/processed/df_samp.rds")
 
-# ============================================================
-# Optional sanity checks 
-# ============================================================
+# ================================================================================
+# 5) Optional sanity checks
+# ================================================================================
 RUN_CHECKS = TRUE
 
 if (RUN_CHECKS) {
@@ -166,10 +169,9 @@ if (RUN_CHECKS) {
   stopifnot(nrow(df_samp) == dplyr::n_distinct(df_model$sample_id))
 }
 
-# ============================================================
-# Create Stan data list
-# ============================================================
-
+# ================================================================================
+# 6) Create Stan data list (standata)
+# ================================================================================
 standata = list(
   N = nrow(df_model),
   S = nrow(df_samp),
@@ -199,10 +201,9 @@ standata = list(
 standata
 saveRDS(standata, "data/processed/standata.rds")
 
-# ============================================================
-# Index maps for interpreting Stan indices in post processing
-# ============================================================
-
+# ================================================================================
+# 7) Create index maps for post-processing
+# ================================================================================
 index_map = list(
   peptide = df_model %>%
     distinct(pep_id, peptide) %>%

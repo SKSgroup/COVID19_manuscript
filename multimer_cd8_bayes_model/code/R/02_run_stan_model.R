@@ -22,13 +22,19 @@
 
 library(cmdstanr)
 
-# Load Stan data list
+# ================================================================================
+# 1) Load Stan data list
+# ================================================================================
 sd = readRDS("data/processed/standata.rds")
 
-# Compile Stan model
+# ================================================================================
+# 2) Compile Stan model
+# ================================================================================
 mod = cmdstan_model("code/Stan/m3_binom_pair_samplere.stan")
 
-# Fit Stan model, save fit object and CSV files with draws to disk
+# ================================================================================
+# 3) Run MCMC sampling with CmdStanR
+# ================================================================================
 stanfit = mod$sample(
   data = sd,
   chains = 4,
@@ -39,7 +45,13 @@ stanfit = mod$sample(
   max_treedepth = 14,
   output_dir = "results/"
 )
+
+# ================================================================================
+# 4) Save fitted model object
+# ================================================================================
 saveRDS(stanfit, "results/stanfit.rds")
 
-# Run diagnostics to check fit converged without issues
+# ================================================================================
+# 5) Run CmdStan diagnostics
+# ================================================================================
 stanfit$cmdstan_diagnose()

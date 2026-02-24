@@ -35,19 +35,17 @@ fit       = readRDS("results/stanfit.rds")
 # (Equivalent to plogis(x); written explicitly for clarity)
 logistic = function(x) 1 / (1 + exp(-x))
 
-# =============================================================================
+# ================================================================================
 # 1) Extract posterior draws from fitted Stan model
 #    Convert to plain data frame so parameters can be indexed easily
-# =============================================================================
-
+# ================================================================================
 dr = as.data.frame(posterior::as_draws_df(fit$draws()))
 D  = nrow(dr)  # number of posterior draws
 
-# =============================================================================
+# ================================================================================
 # 2) Pull observation-level indices and covariates from standata
-#    Each observation n is one patient/sample × peptide-HLA measurement
-# =============================================================================
-
+#    Each observation is one patient/sample x peptide-HLA measurement
+# ================================================================================
 N = standata$N
 
 # Indices (length N): which sample / peptide / allele / pair each observation belongs to
@@ -70,10 +68,9 @@ n_pep_obs  = tabulate(pep,  nbins = J_pep)
 n_hla_obs  = tabulate(hla,  nbins = J_hla)
 n_pair_obs = tabulate(pair, nbins = J_pair)
 
-# =============================================================================
+# ================================================================================
 # 3) Extract posterior parameter blocks (names match Stan model)
-# =============================================================================
-
+# ================================================================================
 # Fixed effects
 b0     = dr$b0
 b_sev  = dr$b_sev
@@ -98,11 +95,10 @@ z_hla0   = as.matrix(dr[, grep("^z_hla0\\[", names(dr)), drop = FALSE])
 z_hlaSev = as.matrix(dr[, grep("^z_hlaSev\\[", names(dr)), drop = FALSE])
 z_pair0  = as.matrix(dr[, grep("^z_pair0\\[", names(dr)), drop = FALSE])
 
-# =============================================================================
+# ================================================================================
 # 4) Helper: rowsum with full index alignment (1..J)
-#    rowsum() omits groups with zero entries; this restores full length.
-# =============================================================================
-
+#    rowsum() omits groups with zero entries; this restores full length
+# ================================================================================
 rowsum_full = function(x, g, J) {
   rs = rowsum(x, g, reorder = FALSE)
   out = numeric(J)
@@ -111,7 +107,7 @@ rowsum_full = function(x, g, J) {
   out
 }
 
-# =============================================================================
+# ================================================================================
 # 5) Compute APC posteriors in one pass over draws
 #
 #    For each posterior draw:
@@ -120,8 +116,7 @@ rowsum_full = function(x, g, J) {
 #      - convert to probabilities p0 and p1
 #      - compute dp_obs = p1 - p0
 #      - aggregate dp_obs to peptide / HLA / pair APCs
-# =============================================================================
-
+# ================================================================================
 pep_mat  = matrix(NA_real_, nrow = D, ncol = J_pep)
 hla_mat  = matrix(NA_real_, nrow = D, ncol = J_hla)
 pair_mat = matrix(NA_real_, nrow = D, ncol = J_pair)
@@ -158,20 +153,18 @@ for (d in seq_len(D)) {
     re_hlaSev[hla]
   
   # --- Observation-level APC on probability scale
-  # Δp = expected severe fraction - expected mild fraction
+  # delta-p = expected severe fraction - expected mild fraction
   dp_obs = logistic(eta1) - logistic(eta0)
   
   # --- Aggregate to group-specific APCs (observation-weighted means)
   pep_mat[d, ]  = rowsum_full(dp_obs, pep,  J_pep)  / n_pep_obs
   hla_mat[d, ]  = rowsum_full(dp_obs, hla,  J_hla)  / n_hla_obs
   pair_mat[d, ] = rowsum_full(dp_obs, pair, J_pair) / n_pair_obs
-  
 }
 
-# =============================================================================
-# 6) Metadata tables (labels for peptide / HLA / pair)
-# =============================================================================
-
+# ================================================================================
+# 6) Build metadata tables (labels for peptide / HLA / pair)
+# ================================================================================
 # Peptide and HLA labels from index map
 pep_labels  = indexmap$peptide$label
 hla_labels  = indexmap$allele$label
@@ -189,12 +182,10 @@ pair_meta = tibble(
     remove = FALSE
   )
 
-
-# =============================================================================
-# 7) Convert matrices to long tidy tables
+# ================================================================================
+# 7) Convert APC matrices to long tidy tables
 #    (draw x group matrices -> long tibbles for plotting/summaries)
-# =============================================================================
-
+# ================================================================================
 # Peptide posterior draws
 pep_post = tibble(
   draw    = rep(seq_len(D), times = J_pep),
@@ -222,10 +213,9 @@ pair_post = tibble(
   left_join(pair_meta, by = "pair_idx") %>%
   select(draw, pair, peptide, hla, dp)
 
-# =============================================================================
-# 8) Inspect and save
-# =============================================================================
-
+# ================================================================================
+# 8) Inspect outputs and save posterior APC tables
+# ================================================================================
 # Quick checks
 print(pep_post)
 print(hla_post)

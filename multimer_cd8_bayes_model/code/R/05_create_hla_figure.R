@@ -18,21 +18,19 @@
 library(tidyverse)
 library(bayesplot)
 
-# =============================================================================
-# Input posterior draws (APC delta-p posteriors)
-#   hla_post : draw-wise peptide APCs (columns: draw, hla, dp)
-# =============================================================================
-
-hla_post  = readRDS("results/hla_post.rds")
+# ================================================================================
+# 0) Load posterior APC draws (delta-p)
+#    - hla_post : draw-wise HLA APCs (draw, hla, dp)
+# ================================================================================
+hla_post = readRDS("results/hla_post.rds")
 
 # Region of practical equivalence (ROPE) around zero for delta-p
 rope = 1e-4
 
-# =============================================================================
-# Helper function: summarize posterior draws for delta-p within groups
-# Returns mean and quantiles, and posterior probabilities relative to 0 / ROPE
-# =============================================================================
-
+# ================================================================================
+# Helper: summarize posterior draws for delta-p within groups
+# Returns means, quantiles, and posterior probabilities relative to 0 / ROPE
+# ================================================================================
 summarise_dp = function(data, group_var, rope = 1e-4) {
   data %>%
     group_by({{ group_var }}) %>%
@@ -49,34 +47,31 @@ summarise_dp = function(data, group_var, rope = 1e-4) {
     )
 }
 
-# =============================================================================
-# 1) HLA-level posterior summary
-# =============================================================================
-
+# ================================================================================
+# 1) Summarize HLA-level posterior APCs
+# ================================================================================
 hla_summary = summarise_dp(hla_post, hla, rope = rope) %>% 
   arrange(desc(dp_q50), desc(p_gt_rope))
 
 print(hla_summary)
 
-# Order hla by posterior median delta-p (largest positive at top of plot)
+# Order HLA alleles by posterior median delta-p (largest positive at top of plot)
 hla_order = hla_summary$hla
 
-# =============================================================================
-# 2) Build wide draw matrix for bayesplot::mcmc_intervals()
-#    bayesplot expects one column per parameter/pair and one row per draw
-# =============================================================================
-
+# ================================================================================
+# 2) Build draw matrix for bayesplot::mcmc_intervals()
+#    bayesplot expects one column per parameter and one row per draw
+# ================================================================================
 df_plot = hla_post %>%
   pivot_wider(names_from = hla, values_from = dp) %>%
   select(draw, all_of(hla_order))
 
-# =============================================================================
-# 3) Plot posterior intervals for the 9 HLA alleles
-# =============================================================================
-
+# ================================================================================
+# 3) Create posterior interval plot for HLA alleles
+# ================================================================================
 # Linear-scale version (useful for checking absolute magnitudes)
 p_hla = mcmc_intervals(df_plot %>% select(-draw), prob_outer = 0.9) +
-  labs(x = "Δp (severe − mild): change in pMHC+ fraction of CD8") +
+  labs(x = expression(Delta * "p (severe - mild): change in pMHC+ fraction of CD8")) +
   theme_bw() +
   geom_vline(xintercept = 0, lty = 2)
 
@@ -91,11 +86,9 @@ p_hla_pseudolog = p_hla +
 
 p_hla_pseudolog
 
-# =============================================================================
-# 4) Save figure as PDF
-# =============================================================================
-
-cairo_pdf("figures/hla_pseudolog.pdf", width = 7, height = 3)
+# ================================================================================
+# 4) Save figure (PDF)
+# ================================================================================
+pdf("figures/hla_pseudolog.pdf", width = 7, height = 3, useDingbats = FALSE)
 print(p_hla_pseudolog)
 dev.off()
-
