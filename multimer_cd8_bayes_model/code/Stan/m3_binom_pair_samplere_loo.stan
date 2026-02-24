@@ -162,8 +162,21 @@ model {
 }
 
 generated quantities {
-  // Pointwise log-likelihood for model comparison (e.g. LOO)
+  // Pointwise log-likelihood for comparison to other models using LOO / PSIS-LOO
   array[N] real log_lik;
+  vector[S] age_term = B_age * b_age;
+  vector[S] sample_base;
+  vector[S] sample_sev_term;
+
+  for (s in 1:S) {
+    sample_base[s] =
+      b0
+      + b_sexM * sex_M[s]
+      + age_term[s]
+      + samp_re[s];
+    sample_sev_term[s] = b_sev * severity[s];
+  }
+
   for (n_i in 1:N) {
     int s = sample_of_obs[n_i];
     int p = pep_of_obs[n_i];
@@ -172,11 +185,8 @@ generated quantities {
     int sev = severity[s];
 
     real eta =
-      b0
-      + b_sexM * sex_M[s]
-      + dot_product(B_age[s], b_age)
-      + samp_re[s]
-      + b_sev * sev
+      sample_base[s]
+      + sample_sev_term[s]
       + re_pep0[p] + re_pepSev[p] * sev
       + re_hla0[a] + re_hlaSev[a] * sev
       + re_pair0[j];
