@@ -118,8 +118,23 @@ model {
   z_hlaSev ~ std_normal();
   z_pair0  ~ std_normal();
 
-  // Likelihood
-  // Binomial logistic regression for pMHC+ fraction among CD8 cells
+  // =============================
+  // Likelihood (binomial logistic regression)
+  // =============================
+  // Precompute sample-level contributions once per leapfrog evaluation
+  // instead of recomputing inside the observation loop.
+  vector[S] age_term = B_age * b_age;
+  vector[S] sample_base;      // terms shared across all observations from sample s
+  vector[S] sample_sev_term;  // sample-specific contribution of the global severity term (b_sev * severity[s])
+  for (s in 1:S) {
+    sample_base[s] =
+      b0
+      + b_sexM * sex_M[s]
+      + age_term[s]
+      + samp_re[s];
+    sample_sev_term[s] = b_sev * severity[s];
+  }
+
   for (n_i in 1:N) {
     int s = sample_of_obs[n_i];   // sample/patient index
     int p = pep_of_obs[n_i];      // peptide index
@@ -136,11 +151,8 @@ model {
     // - peptide- and HLA-specific severity shifts
     // - residual peptide-HLA pair effect (not severity-dependent)
     real eta =
-      b0
-      + b_sexM * sex_M[s]
-      + dot_product(B_age[s], b_age)
-      + samp_re[s]
-      + b_sev * sev
+      sample_base[s]
+      + sample_sev_term[s]
       + re_pep0[p] + re_pepSev[p] * sev
       + re_hla0[a] + re_hlaSev[a] * sev
       + re_pair0[j];
