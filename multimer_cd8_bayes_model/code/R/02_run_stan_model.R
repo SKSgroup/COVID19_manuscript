@@ -29,15 +29,14 @@ sd = readRDS("data/processed/standata.rds")
 mod = cmdstan_model("code/Stan/m3_binom_pair_samplere.stan")
 
 # Fit Stan model, save fit object and CSV files with draws to disk
-# Note: this takes about 2 hours on a MacBook Pro M3 Max using 4 cores
 stanfit = mod$sample(
   data = sd,
   chains = 4,
   parallel_chains = 4,
   iter_warmup = 2000,
   iter_sampling = 2000,
-  adapt_delta = 0.95,
-  max_treedepth = 15,
+  adapt_delta = 0.9,
+  max_treedepth = 14,
   output_dir = "results/"
 )
 saveRDS(stanfit, "results/stanfit.rds")
