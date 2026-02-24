@@ -1,3 +1,22 @@
+# ================================================================================
+# 04_create_peptide_hla_pair_figure.R
+# Create posterior interval figure for selected peptide-HLA pair APCs (delta-p)
+#
+# Input files:
+#   - results/pep_post.rds
+#   - results/pair_post.rds
+#
+# Main tasks:
+#   - Summarize peptide-level posterior delta-p values
+#   - Select peptides with strongest positive/negative posterior shifts
+#   - Summarize peptide-HLA pair posterior delta-p values for selected peptides
+#   - Build draw matrix for bayesplot::mcmc_intervals()
+#   - Create interval plot (including pseudo-log x-axis version)
+#
+# Output files (written to figures/):
+#   - peptide_hla_25pairs_13pos_7neg_pseudolog.pdf
+# ================================================================================
+
 library(tidyverse)
 library(bayesplot)
 

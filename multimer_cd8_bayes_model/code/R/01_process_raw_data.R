@@ -1,13 +1,32 @@
-# =========================================================================
-# Read raw data from original excel files
-# Extract and format relevant variables
-# Encode age as cubic spline with 3 df
-# Encode sex as binary (0=F, 1=M)
-# Encode severity as binary (0=mild, 1=severe)
-# Add indices for sample, peptide, hla, hla-peptide pair 
-# (to index arrays of parameters)
-# Create Stan data list and save to disk
-# =========================================================================
+# ================================================================================
+# 01_process_raw_data.R
+# Read raw Excel input files and create processed data objects for Stan fitting
+#
+# Input files:
+#   - data/raw/Supplementary Tables_eBioMedicine.xlsx
+#   - data/raw/COVID_counts.xlsx
+#
+# Main tasks:
+#   - Extract and format patient covariates (severity, sex, age)
+#   - Encode severity and sex as binary covariates
+#   - Encode age using a cubic spline basis (3 df)
+#   - Replace peptides from selected groups by representative peptide
+#   - Build observation-level and sample-level data tables
+#   - Create Stan data list (standata)
+#   - Create index maps for post-processing
+#
+# Output files (written to data/processed/):
+#   - df_cov.rds
+#   - df_counts.rds
+#   - df_model.rds
+#   - df_samp.rds
+#   - standata.rds
+#   - index_map.rds
+#
+# Notes:
+#   - Intended to be run interactively so printed intermediate objects can be inspected
+#   - Includes optional sanity checks (RUN_CHECKS)
+# ================================================================================
 
 library(tidyverse)
 library(readxl)

@@ -1,21 +1,22 @@
 # ================================================================================
-# R packages and other software needed to run code
-# ================================================================================
-
-# ================================================================================
-# cmdstanR (R-interface to cmdstan), and cmdstan, needed to run Stan Bayesian model
-# Recommended to restart R before steps below to avoid namespace issues
+# 00_setup_packages.R
+# Install required R packages and CmdStanR/CmdStan for the analysis workflow
+#
+# Purpose:
+#   - Install required CRAN packages (if missing)
+#   - Install CmdStanR (if missing)
+#   - Check CmdStan toolchain setup
+#   - Install CmdStan (if needed)
+#
+# Notes:
+#   - Recommended to run interactively
+#   - If installation fails due to namespace/session issues, restart R and rerun
+#   - See CmdStanR installation guide if toolchain setup fails:
+#     https://mc-stan.org/cmdstanr/articles/cmdstanr.html
 # ================================================================================
 
 # Install cmdstanR interface if needed
-if (!"cmdstanr" %in% installed) {
-  install.packages(
-    "cmdstanr",
-    repos = c("https://stan-dev.r-universe.dev", getOption("repos"))
-  )
-} else {
-  message("cmdstanr already installed.")
-}
+install.packages("cmdstanr", repos = c("https://stan-dev.r-universe.dev", getOption("repos")))
 
 # Check that the required C++ toolchain for CmdStan is available:
 library(cmdstanr)

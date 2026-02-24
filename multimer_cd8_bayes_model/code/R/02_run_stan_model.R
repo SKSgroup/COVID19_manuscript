@@ -1,3 +1,25 @@
+# ================================================================================
+# 02_run_stan_model.R
+# Compile and fit the Stan mixed-effects logistic regression model
+#
+# Input file:
+#   - data/processed/standata.rds
+#
+# Main tasks:
+#   - Load Stan data list (standata)
+#   - Compile Stan model
+#   - Run MCMC sampling with CmdStanR
+#   - Save fitted model object and CmdStan CSV chain files
+#   - Run CmdStan diagnostics
+#
+# Output files (written to results/):
+#   - stanfit.rds
+#   - CmdStan CSV chain files (one per chain)
+#
+# Runtime:
+#   - Approximately 11-12 hours on a MacBook Pro M3 Max using 4 cores
+# ================================================================================
+
 library(cmdstanr)
 
 # Load Stan data list

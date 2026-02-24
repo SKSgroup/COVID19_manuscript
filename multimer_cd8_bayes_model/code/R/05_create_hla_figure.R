@@ -1,3 +1,20 @@
+# ================================================================================
+# 05_create_hla_figure.R
+# Create posterior interval figure for HLA-level APCs (delta-p)
+#
+# Input files:
+#   - results/hla_post.rds
+#
+# Main tasks:
+#   - Summarize HLA-level posterior delta-p values
+#   - Order HLA alleles by posterior median delta-p
+#   - Build draw matrix for bayesplot::mcmc_intervals()
+#   - Create interval plot (including pseudo-log x-axis version)
+#
+# Output files (written to figures/):
+#   - hla_pseudolog.pdf
+# ================================================================================
+
 library(tidyverse)
 library(bayesplot)
 

@@ -1,8 +1,35 @@
+# ================================================================================
+# 03_compute_delta_p_from_posterior_draws.R
+# Compute posterior average predictive comparisons (APCs) from Stan posterior draws
+#
+# Definition:
+#   - delta-p = p_severe - p_mild
+#   - APCs are obtained by averaging delta-p across observations within each group
+#     (peptide, HLA allele, or peptide-HLA pair)
+#
+# Input files:
+#   - data/processed/standata.rds
+#   - data/processed/index_map.rds
+#   - results/stanfit.rds
+#
+# Main tasks:
+#   - Extract posterior draws from fitted Stan model
+#   - Reconstruct linear predictors for severity = 0 and severity = 1
+#   - Compute observation-level delta-p for each posterior draw
+#   - Aggregate to posterior APCs for peptide, HLA, and peptide-HLA pair levels
+#   - Convert outputs to tidy long-format tables
+#
+# Output files (written to results/):
+#   - pep_post.rds
+#   - hla_post.rds
+#   - pair_post.rds
+# ================================================================================
+
 library(tidyverse)
 
 standata  = readRDS("data/processed/standata.rds")
 indexmap  = readRDS("data/processed/index_map.rds")
-fit       = readRDS("~/Desktop/sunil_susana/fits/M3_backup_binom_pair_samplere/fit.rds")
+fit       = readRDS("results/stanfit.rds")
 
 # Logistic / inverse-logit function
 # (Equivalent to plogis(x); written explicitly for clarity)
