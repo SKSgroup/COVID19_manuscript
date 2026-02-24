@@ -25,11 +25,11 @@ data {
   array[N] int<lower=1, upper=J_pair> pair_of_obs;
 
   // -----------------------------
-  // Sample-level covariates (potential confounders)
+  // Sample-level predictors and adjustment covariates
   // -----------------------------
-  array[S] int<lower=0, upper=1> severity;   // 0 = mild, 1 = severe
+  array[S] int<lower=0, upper=1> severity;   // 0 = mild, 1 = severe (focal predictor)
   array[S] int<lower=0, upper=1> sex_M;      // 0 = female, 1 = male
-  matrix[S, K_age] B_age;                    // age spline basis (recommended centered/scaled in R)
+  matrix[S, K_age] B_age;                    // age spline basis (centered/scaled in R)
 }
 
 parameters {
