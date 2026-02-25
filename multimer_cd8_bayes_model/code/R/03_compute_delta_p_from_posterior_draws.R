@@ -1,6 +1,7 @@
 # ================================================================================
 # 03_compute_delta_p_from_posterior_draws.R
-# Compute posterior APCs (delta-p = p_severe - p_mild) from Stan posterior draws.
+# Compute posterior average predictive comparisons (APCs) for
+# delta-p = p_severe - p_mild from Stan posterior draws.
 #
 # Inputs:
 #   - data/processed/standata.rds
@@ -154,7 +155,7 @@ for (d in seq_len(D)) {
 # Peptide and HLA labels from index map
 pep_labels  = indexmap$peptide$label
 hla_labels  = indexmap$allele$label
-pair_labels = indexmap$pair$label  # expected format: "PEPTIDE | A01:01" (or similar)
+pair_labels = indexmap$pair$label 
 
 # Pair metadata: keep pair label, and split into peptide + hla columns
 pair_meta = tibble(
