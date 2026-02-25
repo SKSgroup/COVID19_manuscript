@@ -10,7 +10,7 @@
 #   - CmdStan CSV chain files
 #
 # Runtime:
-#   - ~11-12 hours on MacBook Pro M3 Max (4 cores) in the author’s setup
+#   - ~8-9 hours on MacBook Pro M3 Max (4 cores) in the author’s setup
 # ================================================================================
 
 library(cmdstanr)
