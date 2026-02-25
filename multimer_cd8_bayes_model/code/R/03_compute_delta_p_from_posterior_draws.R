@@ -58,24 +58,25 @@ n_pair_obs = tabulate(pair, nbins = J_pair)
 # ================================================================================
 # 3) Extract posterior parameter blocks (names match Stan model)
 # ================================================================================
-# Fixed effects
+# Global coefficients (severity = focal predictor; sex/age = adjustment covariates)
 b0     = dr$b0
 b_sev  = dr$b_sev
 b_sexM = dr$b_sexM
 b_age  = as.matrix(dr[, grep("^b_age\\[", names(dr)), drop = FALSE])
 
-# Sample random intercept (non-centered)
+# Sample-level intercept hierarchy (non-centered): sd + latent z
 sd_samp = dr$sd_samp
 z_samp  = as.matrix(dr[, grep("^z_samp\\[", names(dr)), drop = FALSE])
 
-# Hierarchical SDs
+# Group-level hierarchy scales (SDs)
+# *_0 = baseline deviations; *_Sev = severity-specific deviations
 sd_pep0   = dr$sd_pep0
 sd_pepSev = dr$sd_pepSev
 sd_hla0   = dr$sd_hla0
 sd_hlaSev = dr$sd_hlaSev
 sd_pair0  = dr$sd_pair0
 
-# Non-centered random effects
+# Group-level latent effects (non-centered z terms)
 z_pep0   = as.matrix(dr[, grep("^z_pep0\\[", names(dr)), drop = FALSE])
 z_pepSev = as.matrix(dr[, grep("^z_pepSev\\[", names(dr)), drop = FALSE])
 z_hla0   = as.matrix(dr[, grep("^z_hla0\\[", names(dr)), drop = FALSE])
@@ -83,12 +84,15 @@ z_hlaSev = as.matrix(dr[, grep("^z_hlaSev\\[", names(dr)), drop = FALSE])
 z_pair0  = as.matrix(dr[, grep("^z_pair0\\[", names(dr)), drop = FALSE])
 
 # ================================================================================
-# 4) Helper: rowsum with full index alignment (1..J)
+# 4) Helper for group sums with explicit 1..J index alignment.
 #    rowsum() omits groups with zero entries; this restores full length
+#    Slight overkill: In the current workflow all groups should be present, 
+#    but this keeps the code robust to future subsetting/filtering where 
+#    some groups might be absent.
 # ================================================================================
 rowsum_full = function(x, g, J) {
   rs = rowsum(x, g, reorder = FALSE)
-  out = numeric(J)
+  out = numeric(J)       # sets default value to 0
   idx = as.integer(rownames(rs))
   out[idx] = as.numeric(rs)
   out
@@ -110,7 +114,7 @@ pair_mat = matrix(NA_real_, nrow = D, ncol = J_pair)
 
 for (d in seq_len(D)) {
   
-  # --- Reconstruct random effects for this draw (non-centered parameterization)
+  # Reconstruct random effects for this draw (non-centered parameterization)
   samp_re_obs = (sd_samp[d] * z_samp[d, ])[s]   # sample RE expanded to obs level
   
   re_pep0   = sd_pep0[d]   * z_pep0[d, ]
@@ -119,10 +123,10 @@ for (d in seq_len(D)) {
   re_hlaSev = sd_hlaSev[d] * z_hlaSev[d, ]
   re_pair0  = sd_pair0[d]  * z_pair0[d, ]
   
-  # --- Age contribution at observation level
+  # Age contribution at observation level
   age_eta = as.numeric(B %*% b_age[d, ])
   
-  # --- Linear predictor with severity forced to mild (sev = 0)
+  # Linear predictor with severity forced to mild (sev = 0)
   # Matches the Stan model after replacing severity[s] by 0
   eta0 = b0[d] +
     b_sexM[d] * sex_s +
@@ -132,18 +136,18 @@ for (d in seq_len(D)) {
     re_hla0[hla] +
     re_pair0[pair]
   
-  # --- Linear predictor with severity forced to severe (sev = 1)
+  # Linear predictor with severity forced to severe (sev = 1)
   # Adds global + peptide-specific + allele-specific severity shifts
   eta1 = eta0 +
     b_sev[d] +
     re_pepSev[pep] +
     re_hlaSev[hla]
   
-  # --- Observation-level APC on probability scale
+  # APC on probability scale for each observation
   # delta-p = expected severe fraction - expected mild fraction
   dp_obs = logistic(eta1) - logistic(eta0)
   
-  # --- Aggregate to group-specific APCs (observation-weighted means)
+  # Compute average dp for each peptide / hla / pair, for this draw
   pep_mat[d, ]  = rowsum_full(dp_obs, pep,  J_pep)  / n_pep_obs
   hla_mat[d, ]  = rowsum_full(dp_obs, hla,  J_hla)  / n_hla_obs
   pair_mat[d, ] = rowsum_full(dp_obs, pair, J_pair) / n_pair_obs
@@ -172,31 +176,32 @@ pair_meta = tibble(
 # ================================================================================
 # 7) Convert APC matrices to long tidy tables
 #    (draw x group matrices -> long tibbles for plotting/summaries)
+#    Replace Stan numerical indices by original peptide, hla, pair strings
 # ================================================================================
 # Peptide posterior draws
 pep_post = tibble(
-  draw    = rep(seq_len(D), times = J_pep),
-  pep_idx = rep(seq_len(J_pep), each = D),
-  dp      = as.vector(pep_mat)
-) %>%
+    draw    = rep(seq_len(D), times = J_pep),
+    pep_idx = rep(seq_len(J_pep), each = D),
+    dp      = as.vector(pep_mat)
+  ) %>%
   mutate(peptide = pep_labels[pep_idx]) %>%
   select(draw, peptide, dp)
 
 # HLA posterior draws
 hla_post = tibble(
-  draw    = rep(seq_len(D), times = J_hla),
-  hla_idx = rep(seq_len(J_hla), each = D),
-  dp      = as.vector(hla_mat)
-) %>%
+    draw    = rep(seq_len(D), times = J_hla),
+    hla_idx = rep(seq_len(J_hla), each = D),
+    dp      = as.vector(hla_mat)
+  ) %>%
   mutate(hla = hla_labels[hla_idx]) %>%
   select(draw, hla, dp)
 
 # Pair posterior draws (with peptide + HLA columns attached)
-pair_post = tibble(
-  draw     = rep(seq_len(D), times = J_pair),
-  pair_idx = rep(seq_len(J_pair), each = D),
-  dp       = as.vector(pair_mat)
-) %>%
+  pair_post = tibble(
+    draw     = rep(seq_len(D), times = J_pair),
+    pair_idx = rep(seq_len(J_pair), each = D),
+    dp       = as.vector(pair_mat)
+  ) %>%
   left_join(pair_meta, by = "pair_idx") %>%
   select(draw, pair, peptide, hla, dp)
 
